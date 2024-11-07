@@ -8,41 +8,52 @@ export function BarcodeScanner() {
   const html5QrcodeScannerRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
-    // Only initialize if not already initialized
     if (!html5QrcodeScannerRef.current) {
       const html5QrcodeScanner = new Html5Qrcode(scannerId);
       html5QrcodeScannerRef.current = html5QrcodeScanner;
 
-      html5QrcodeScanner.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-        },
-        (decodedText) => {
-          setScanResult(decodedText);
-          html5QrcodeScanner.stop(); // Stop scanning after a successful scan
-        },
-        (errorMessage) => {
-          console.warn("QR code scanning error:", errorMessage);
-        }
-      );
+      startScanning();
     }
 
     return () => {
-      // Ensure proper cleanup
-      if (
-        html5QrcodeScannerRef.current &&
-        html5QrcodeScannerRef.current.getState() ===
-          Html5QrcodeScannerState.SCANNING
-      ) {
-        html5QrcodeScannerRef.current
-          .stop()
-          .then(() => html5QrcodeScannerRef.current?.clear())
-          .catch((error) => console.error("Error stopping scanner:", error));
-      }
+      stopScanning();
     };
   }, []);
+
+  const startScanning = () => {
+    html5QrcodeScannerRef.current?.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+      },
+      (decodedText) => {
+        setScanResult(decodedText);
+        stopScanning();
+      },
+      (errorMessage) => {
+        console.warn("QR code scanning error:", errorMessage);
+      }
+    );
+  };
+
+  const stopScanning = () => {
+    if (
+      html5QrcodeScannerRef.current &&
+      html5QrcodeScannerRef.current.getState() ===
+        Html5QrcodeScannerState.SCANNING
+    ) {
+      html5QrcodeScannerRef.current
+        .stop()
+        .then(() => html5QrcodeScannerRef.current?.clear())
+        .catch((error) => console.error("Error stopping scanner:", error));
+    }
+  };
+
+  const handleRescan = () => {
+    setScanResult(null);
+    startScanning();
+  };
 
   return (
     <div
@@ -56,7 +67,17 @@ export function BarcodeScanner() {
     >
       <h1>Barcode Scanner</h1>
       {scanResult ? (
-        <div>Scan Result: {scanResult}</div>
+        <div>
+          <div>Scan Result: {scanResult}</div>
+          <button
+            onClick={handleRescan}
+            style={{
+              marginTop: "1rem",
+            }}
+          >
+            Rescan
+          </button>
+        </div>
       ) : (
         <div>Point your camera at a QR code</div>
       )}
