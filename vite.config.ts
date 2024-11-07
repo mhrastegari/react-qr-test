@@ -4,6 +4,7 @@ import mkcert from "vite-plugin-mkcert";
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: "/react-qr-test/",
   plugins: [react(), mkcert()],
   server: {
     https: true,
