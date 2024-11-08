@@ -15,25 +15,24 @@ export function BarcodeScanner({
   const html5QrcodeScannerRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
-    if (scanResult === null && !html5QrcodeScannerRef.current) {
-      const html5QrcodeScanner = new Html5Qrcode(scannerId);
-      html5QrcodeScannerRef.current = html5QrcodeScanner;
+    if (scanResult || html5QrcodeScannerRef.current) return;
 
-      html5QrcodeScanner.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-        },
-        (decodedText: string) => {
-          setScanResult(decodedText);
-          stopScanning();
-        },
-        (errorMessage: string) => {
-          console.warn("QR code scanning error:", errorMessage);
-        }
-      );
-    }
+    const html5QrcodeScanner = new Html5Qrcode(scannerId);
+    html5QrcodeScannerRef.current = html5QrcodeScanner;
+    html5QrcodeScanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+      },
+      (decodedText: string) => {
+        setScanResult(decodedText);
+        stopScanning();
+      },
+      (errorMessage: string) => {
+        console.warn("QR code scanning error:", errorMessage);
+      }
+    );
 
     return () => {
       stopScanning();
@@ -41,19 +40,19 @@ export function BarcodeScanner({
   }, [scanResult]);
 
   const stopScanning = () => {
-    if (
-      html5QrcodeScannerRef.current &&
-      html5QrcodeScannerRef.current.getState() ===
-        Html5QrcodeScannerState.SCANNING
-    ) {
-      html5QrcodeScannerRef.current
-        .stop()
-        .then(() => {
-          html5QrcodeScannerRef.current?.clear();
-          html5QrcodeScannerRef.current = null;
-        })
-        .catch((error) => console.error("Error stopping scanner:", error));
+    const scanner = html5QrcodeScannerRef.current;
+
+    if (!scanner || scanner.getState() !== Html5QrcodeScannerState.SCANNING) {
+      return;
     }
+
+    scanner
+      .stop()
+      .then(() => {
+        scanner.clear();
+        html5QrcodeScannerRef.current = null;
+      })
+      .catch((error) => console.error("Error stopping scanner:", error));
   };
 
   return (
